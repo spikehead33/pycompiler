@@ -1,7 +1,7 @@
-use anyhow::Result;
 use crate::{code_gen::CodeGenerator, modules::PythonModule, parser::Parser};
+use anyhow::Result;
 use inkwell::{context::Context, module::Module};
-use rustpython_parser::ast::{fold::Foldable, ModModule, Stmt};
+use rustpython_parser::ast::{fold::Foldable, ModModule, Stmt, StmtAnnAssign, StmtClassDef, StmtFunctionDef};
 
 pub struct Compiler<'ctx, 'a> {
     parser: Parser<'a>,
@@ -41,16 +41,17 @@ impl<'ctx, 'a> Compiler<'ctx, 'a> {
         for stmt in module.body.iter() {
             match stmt {
                 Stmt::Import(import_stmt) => {
-                    todo!("implement import statement");
+                    let imported_module = todo!("should return a imported module ast");
+                    self.compile_module(imported_module)?;
                 }
-                Stmt::AnnAssign(typed_assign) => {
-                    todo!("implement annotation assignment, Global variable");
+                Stmt::AnnAssign(typed_assignment) => {
+                    self.compile_global_variable(typed_assignment)?;
                 }
                 Stmt::FunctionDef(func) => {
-                    todo!("implement function definition");
+                    self.compile_func_def(func)?;
                 }
                 Stmt::ClassDef(class) => {
-                    todo!("implement class definition");
+                    self.compile_class_def(class_def_stmt)?;
                 }
                 s => {
                     eprintln!("Error: unsupported top level statement: {s:?}")
@@ -60,8 +61,21 @@ impl<'ctx, 'a> Compiler<'ctx, 'a> {
         Ok(())
     }
 
+    pub fn compile_global_variable(&self, typed_assignment_stmt: &StmtAnnAssign) -> Result<()> {
+        todo!()
+    }
+
+    pub fn compile_func_def(&self, func_def_stmt: &StmtFunctionDef) -> Result<()> {
+        todo!()
+    }
+
+    pub fn compile_class_def(&self, class_def_stmt: &StmtClassDef) -> Result<()> {
+        todo!()
+    }
+
     fn print_to_file(&self) -> Result<()> {
-        self.output_module.print_to_file(self.output_path)
+        self.output_module
+            .print_to_file(self.output_path)
             .map_err(|e| format!("Error: {:?}", e))
             .map_err(anyhow::Error::msg)
     }
