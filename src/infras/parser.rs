@@ -1,10 +1,10 @@
-use core::panic;
-
 use anyhow::Result;
 use rustpython_parser::{
     ast::{Mod, ModModule},
     parse,
 };
+
+use crate::cores;
 
 pub struct Parser<'a> {
     source: &'a str,
@@ -13,13 +13,12 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(source: &'a str, source_path: &'a str) -> Self {
-        Self {
-            source,
-            source_path,
-        }
+        Self { source, source_path, }
     }
+}
 
-    pub fn parse(&self) -> Result<ModModule> {
+impl<'a> cores::Parser for Parser<'a> {
+    fn parse(&self) -> Result<ModModule> {
         let m = parse(
             self.source,
             rustpython_parser::Mode::Module,
@@ -28,6 +27,8 @@ impl<'a> Parser<'a> {
         let Mod::Module(m) = m else {
             panic!("expected a module")
         };
+
+        println!("{:#?}", m);
         Ok(m)
     }
 }

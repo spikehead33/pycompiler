@@ -1,34 +1,36 @@
-mod compiler;
+mod cores;
+mod infras;
+
+mod module;
+mod imports_handler;
 mod modules;
-mod parser;
 
 use anyhow::Result;
-use compiler::Compiler;
 use inkwell::context::Context;
-use std::fs::read_to_string;
+use std::{fs::read_to_string, process::exit};
 
 const MAIN_MODULE_NAME: &str = "main";
-
 const OUTPUT_PATH_NAME: &str = "output.ll";
 
 fn main() {
     if let Err(e) = start() {
         eprint!("Error: {e}");
-        std::process::exit(1);
+        exit(1);
     }
+
+    println!("compiled successfully!!!");
 }
 
 fn start() -> Result<()> {
-    let source_path = "examples/import_modules.py";
+    let source_path = "examples/global.py";
     let source = read_to_string(source_path)?;
 
-    let parser = parser::Parser::new(&source, source_path);
-    let module_ast = parser.parse()?;
+    let parser = infras::Parser::new(&source, source_path);
 
     let context = Context::create();
     let output_module = context.create_module(MAIN_MODULE_NAME);
+    let codegen = infras::CodeGenerator::new(&context, output_module);
 
-    let compiler = Compiler::new(parser, &context, output_module, OUTPUT_PATH_NAME);
-
+    let compiler = cores::Compiler::new(parser, codegen, OUTPUT_PATH_NAME);
     compiler.compile()
 }
