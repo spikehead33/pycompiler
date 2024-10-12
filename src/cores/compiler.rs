@@ -1,35 +1,37 @@
-use anyhow::Result;
-use rustpython_parser::ast::{Expr, ExprConstant, ExprName, ModModule, Stmt, StmtAnnAssign, StmtClassDef, StmtFunctionDef};
+use super::{CodeGenerator, ErrorReporter, Parser};
 use crate::cores::PyLitValue;
+use anyhow::Result;
+use rustpython_parser::ast::{
+    Expr, ExprConstant, ExprName, ModModule, Stmt, StmtAnnAssign, StmtClassDef, StmtFunctionDef,
+};
 
-use super::{CodeGenerator, Parser};
-
-pub struct Compiler<P, G>
+pub struct Compiler<P, G, R>
 where
     P: Parser,
     G: CodeGenerator,
+    R: ErrorReporter,
 {
-    output_path: &'static str,
-
-    parser: P,
     codegen: G,
+    parser: P,
+    error_reporter: R,
 }
 
-impl<P, G> Compiler<P, G>
+impl<P, G, R> Compiler<P, G, R>
 where
     P: Parser,
     G: CodeGenerator,
+    R: ErrorReporter,
 {
-    pub fn new(parser: P, codegen: G, output_path: &'static str) -> Self {
+    pub fn new(parser: P, codegen: G, error_reporter: R) -> Self {
         Self {
-            output_path,
-            parser,
             codegen,
+            error_reporter,
+            parser,
         }
     }
 
     fn print_to_file(&self) -> Result<()> {
-        self.codegen.print_to_file(self.output_path)
+        self.codegen.print_to_file()
     }
 
     pub fn compile(&self) -> Result<()> {
@@ -68,15 +70,17 @@ where
 
     fn compile_global_variable(&self, typed_assignment: &StmtAnnAssign) -> Result<()> {
         let Some(value) = &typed_assignment.value else {
-            return Err(anyhow::anyhow!("value of global variable needed to be assign"))
+            return Err(anyhow::anyhow!(
+                "value of global variable needed to be assign"
+            ));
         };
 
         let Expr::Name(ExprName { id, range, .. }) = &*typed_assignment.target else {
-            return Err(anyhow::anyhow!("unexpected error!!!"))
+            return Err(anyhow::anyhow!("unexpected error!!!"));
         };
-        
+
         let Expr::Constant(ExprConstant { value, range, .. }) = &**value else {
-            return Err(anyhow::anyhow!("unexpected error!!!"))
+            return Err(anyhow::anyhow!("unexpected error!!!"));
         };
 
         let lit = PyLitValue::try_new(value)?;
@@ -85,9 +89,6 @@ where
     }
 
     fn compile_func_def(&self, func: &StmtFunctionDef) -> Result<()> {
-        if func.name.to_string() == "main" {
-        }
-
         todo!()
     }
 

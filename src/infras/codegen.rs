@@ -7,22 +7,26 @@ pub struct CodeGenerator<'ctx> {
     context: &'ctx Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
+
+    output_path: &'static str,
 }
 
 impl<'ctx> CodeGenerator<'ctx> {
-    pub fn new(context: &'ctx Context, module: Module<'ctx>) -> Self {
+    pub fn new(context: &'ctx Context, module: Module<'ctx>, output_path: &'static str) -> Self {
         let builder = context.create_builder();
         Self {
             context,
             module,
             builder,
+            output_path,
         }
     }
 }
 
 impl<'ctx> cores::CodeGenerator for CodeGenerator<'ctx> {
-    fn print_to_file(&self, output_path: &str) -> Result<()> {
-        self.module.print_to_file(output_path)
+    fn print_to_file(&self) -> Result<()> {
+        self.module
+            .print_to_file(self.output_path)
             .map_err(|e| format!("Error: {:?}", e))
             .map_err(anyhow::Error::msg)
     }
@@ -46,7 +50,7 @@ impl<'ctx> cores::CodeGenerator for CodeGenerator<'ctx> {
                 // let str_type = self.context.i8_type().array_type(val.len() as u32);
                 // let str_val = str_type.const_string(val.as_bytes(), false);
                 // self.module.add_global(str_type, None, var);
-            },
+            }
             cores::PyLitValue::Bool(val) => {
                 let i1_type = self.context.bool_type();
                 let i1_val = i1_type.const_int(val as u64, false);
@@ -54,7 +58,10 @@ impl<'ctx> cores::CodeGenerator for CodeGenerator<'ctx> {
                 global_var.set_initializer(&i1_val);
             }
         }
-
         Ok(())
+    }
+
+    fn add_function_def(&self) -> Result<()> {
+        todo!()
     }
 }

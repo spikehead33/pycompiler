@@ -13,7 +13,10 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(source: &'a str, source_path: &'a str) -> Self {
-        Self { source, source_path, }
+        Self {
+            source,
+            source_path,
+        }
     }
 }
 
