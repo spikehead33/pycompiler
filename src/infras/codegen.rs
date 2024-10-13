@@ -1,5 +1,11 @@
-use anyhow::Result;
-use inkwell::{builder::Builder, context::Context, module::Module};
+use anyhow::{bail, Result};
+use inkwell::{
+    builder::Builder,
+    context::Context,
+    module::Module,
+    types::{BasicMetadataTypeEnum, BasicTypeEnum},
+};
+use rustpython_parser::ast::{Expr, ExprName, StmtFunctionDef};
 
 use crate::cores;
 
@@ -61,7 +67,50 @@ impl<'ctx> cores::CodeGenerator for CodeGenerator<'ctx> {
         Ok(())
     }
 
-    fn add_function_def(&self) -> Result<()> {
+    fn add_function_def(&self, func: &StmtFunctionDef) -> Result<()> {
+        // currently only support position-only arguments
+        // TODO: use other construct instead of .unwrap()
+        let params: Vec<BasicMetadataTypeEnum> = func
+            .args
+            .args
+            .iter()
+            .map(|arg| {
+                let ty = arg.def.annotation.clone().unwrap();
+
+                let Expr::Name(ExprName { id: ty, .. }) = &*ty else {
+                    panic!("not implemented yet");
+                };
+
+                match ty.as_str() {
+                    "int" => self.context.i32_type().into(),
+                    "float" => self.context.f64_type().into(),
+                    "bool" => self.context.bool_type().into(),
+                    _ => panic!("not implemented yet"),
+                }
+            })
+            .collect();
+
+        let func_type = match &func.returns {
+            Some(ret) => {
+                let Expr::Name(ExprName { id: ty, .. }) = &**ret else {
+                    panic!("not implemented yet");
+                };
+
+                match ty.as_str() {
+                    "int" => self.context.i32_type().fn_type(params.as_slice(), false),
+                    "float" => self.context.f64_type().fn_type(params.as_slice(), false),
+                    "bool" => self.context.bool_type().fn_type(params.as_slice(), false),
+                    _ => bail!("not implemented yet"),
+                }
+            }
+            _ => self.context.void_type().fn_type(params.as_slice(), false),
+        };
+
+        let function = self.module.add_function(&func.name, func_type, None);
+
+        let current_bb = self.context.append_basic_block(function, "entry");
+        self.builder.position_at_end(current_bb);
+
         todo!()
     }
 }
